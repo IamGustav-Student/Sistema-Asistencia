@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Asistencias Instituto 124</title>
+  <!-- Google Fonts: Outfit for titles, Inter for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Global App Shell -->
+  <div class="app-shell">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>Instituto 124</h1>
+          <span>Sist. de Asistencias</span>
+        </div>
+      </div>
+
+      <!-- Quick Role Selector (Dynamic in Sidebar) -->
+      <div class="sidebar-role-indicator">
+        <span class="indicator-label">Sesión Activa:</span>
+        <div class="role-badge" id="active-role-badge">Visitante</div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-nav">
+        
+        <div class="nav-section">
+          <h3>Autenticación</h3>
+          <ul>
+            <li><button class="nav-btn active" data-view="login"><span class="icon">🔐</span> Login / Acceso</button></li>
+          </ul>
+        </div>
+
+        <div class="nav-section role-restricted preceptor-only" style="display: none;">
+          <h3>Panel Preceptoría</h3>
+          <ul>
+            <li><button class="nav-btn" data-view="admin-dash"><span class="icon">🏛️</span> Dashboard General</button></li>
+            <li><button class="nav-btn" data-view="admin-justifications"><span class="icon">📁</span> Justificaciones</button></li>
+            <li><button class="nav-btn" data-view="admin-early-warning"><span class="icon">⚠️</span> Alerta Temprana</button></li>
+            <li><button class="nav-btn" data-view="admin-reports"><span class="icon">📊</span> Planilla Mensual</button></li>
+          </ul>
+        </div>
+
+        <div class="nav-section role-restricted teacher-only" style="display: none;">
+          <h3>Panel Profesor</h3>
+          <ul>
+            <li><button class="nav-btn" data-view="teacher-dash"><span class="icon">👨‍🏫</span> Dashboard Docente</button></li>
+            <li><button class="nav-btn" data-view="teacher-clockin"><span class="icon">⏱️</span> Firma Digital (Clock-In)</button></li>
+            <li><button class="nav-btn" data-view="teacher-attendance"><span class="icon">📝</span> Tomar Asistencia</button></li>
+            <li><button class="nav-btn" data-view="teacher-qr"><span class="icon">📡</span> Proyectar QR Dinámico</button></li>
+          </ul>
+        </div>
+
+        <div class="nav-section role-restricted student-only" style="display: none;">
+          <h3>Panel Alumno</h3>
+          <ul>
+            <li><button class="nav-btn" data-view="student-dash"><span class="icon">🎓</span> Mi Dashboard</button></li>
+            <li><button class="nav-btn" data-view="student-scanner"><span class="icon">📱</span> Escanear Asistencia</button></li>
+            <li><button class="nav-btn" data-view="student-justification"><span class="icon">📥</span> Cargar Certificado</button></li>
+          </ul>
+        </div>
+
+        <div class="nav-section">
+          <h3>Ajustes</h3>
+          <ul>
+            <li><button class="nav-btn" data-view="settings"><span class="icon">⚙️</span> Preferencias Alertas</button></li>
+          </ul>
+        </div>
+
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="btn-logout" class="btn btn-outline-danger" style="display: none; width: 100%;">
+          <span>🚪 Cerrar Sesión</span>
+        </button>
+        <div class="developer-credit">
+          Hecho con Antigravity
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="app-content">
+      
+      <!-- Top Bar / Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <h2 id="view-title">Login / Acceso</h2>
+          <p id="view-subtitle" class="text-muted">Ingresa tus credenciales o selecciona un perfil rápido para explorar.</p>
+        </div>
+        <div class="header-right">
+          <div id="header-time-widget" class="time-widget">
+            <span class="dot pulse-emerald"></span>
+            <span id="header-clock">18:32:00</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Canvas Workspace -->
+      <div class="canvas-workspace" id="canvas-container">
+        
+        <!-- ==================== VIEW 1: LOGIN ==================== -->
+        <section id="view-login" class="canvas-view active">
+          <div class="login-container">
+            <div class="login-card glass-panel">
+              <div class="login-header">
+                <h2>Iniciar Sesión</h2>
+                <p>Ingresa al sistema de asistencia del instituto</p>
+              </div>
+              <form id="login-form" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                  <label for="input-email">Email institucional o Legajo</label>
+                  <input type="text" id="input-email" placeholder="ejemplo@instituto124.edu.ar o L10928" required>
+                </div>
+                <div class="form-group">
+                  <div class="label-row">
+                    <label for="input-password">Contraseña</label>
+                    <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+                  </div>
+                  <input type="password" id="input-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit">Acceder</button>
+              </form>
+              
+              <div class="divider">
+                <span>o accede con un solo clic</span>
+              </div>
+
+              <div class="oauth-buttons">
+                <button class="btn btn-outline" id="btn-oauth-google">
+                  <svg class="oauth-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="#EA4335" d="M12 5.04c1.61 0 3.06.55 4.2 1.64l3.15-3.15C17.45 1.74 14.93 1 12 1 7.37 1 3.4 3.66 1.44 7.55l3.77 2.92C6.1 7.52 8.81 5.04 12 5.04z"/><path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.45h6.44c-.28 1.47-1.11 2.72-2.36 3.56l3.66 2.84c2.14-1.97 3.75-4.87 3.75-8.5z"/><path fill="#FBBC05" d="M5.21 14.59c-.24-.72-.37-1.49-.37-2.29s.13-1.57.37-2.29L1.44 7.09C.52 8.93 0 10.98 0 13.14s.52 4.21 1.44 6.05l3.77-2.92c-.24-.72-.37-1.49-.37-2.29z"/><path fill="#34A853" d="M12 23c3.24 0 5.97-1.08 7.96-2.92l-3.66-2.84c-1.11.75-2.52 1.19-4.3 1.19-3.19 0-5.9-2.48-6.79-5.43L1.44 15.93C3.4 19.82 7.37 23 12 23z"/></svg>
+                  Google Workspace
+                </button>
+              </div>
+
+              <div class="role-shortcuts">
+                <h3>💡 Accesos Rápidos de Simulación (Recomendado):</h3>
+                <div class="shortcut-buttons">
+                  <button class="btn btn-shortcut role-preceptor" data-role="preceptor">👑 Preceptor (Admin)</button>
+                  <button class="btn btn-shortcut role-profesor" data-role="profesor">👨‍🏫 Profesor</button>
+                  <button class="btn btn-shortcut role-alumno" data-role="alumno">🎓 Alumno</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 2: ADMIN DASHBOARD ==================== -->
+        <section id="view-admin-dash" class="canvas-view">
+          <div class="dashboard-grid">
+            
+            <!-- Cards de KPIs -->
+            <div class="kpi-card glass-panel border-left-emerald">
+              <div class="kpi-icon emerald">👨‍🏫</div>
+              <div class="kpi-data">
+                <h3>94.8%</h3>
+                <p>Presentismo Docente Hoy</p>
+                <span class="trend positive">↑ 1.2% esta semana</span>
+              </div>
+            </div>
+
+            <div class="kpi-card glass-panel border-left-violet">
+              <div class="kpi-icon violet">🎓</div>
+              <div class="kpi-data">
+                <h3>82.1%</h3>
+                <p>Presentismo Alumnos Hoy</p>
+                <span class="trend positive">↑ 0.5% este mes</span>
+              </div>
+            </div>
+
+            <div class="kpi-card glass-panel border-left-amber">
+              <div class="kpi-icon amber">⚠️</div>
+              <div class="kpi-data">
+                <h3 id="admin-pending-justifications">5</h3>
+                <p>Justificaciones Pendientes</p>
+                <span class="trend warning">Requiere tu aprobación</span>
+              </div>
+            </div>
+
+            <div class="kpi-card glass-panel border-left-danger">
+              <div class="kpi-icon danger">🚨</div>
+              <div class="kpi-data">
+                <h3>14</h3>
+                <p>Alumnos en Riesgo Crítico</p>
+                <span class="trend danger">Por debajo del 75%</span>
+              </div>
+            </div>
+
+            <!-- Gráfico Analítico de Asistencia -->
+            <div class="panel-card glass-panel col-span-2">
+              <div class="panel-header">
+                <h3>Asistencia Semanal por Carrera</h3>
+                <span class="panel-tag">Últimos 5 días hábiles</span>
+              </div>
+              <div class="chart-container">
+                <!-- Dibujo de un gráfico vectorial SVG premium -->
+                <svg viewBox="0 0 500 200" class="premium-svg-chart">
+                  <g class="grid-lines">
+                    <line x1="50" y1="30" x2="480" y2="30" stroke="#27272a" stroke-dasharray="4" />
+                    <line x1="50" y1="80" x2="480" y2="80" stroke="#27272a" stroke-dasharray="4" />
+                    <line x1="50" y1="130" x2="480" y2="130" stroke="#27272a" stroke-dasharray="4" />
+                    <line x1="50" y1="180" x2="480" y2="180" stroke="#27272a" />
+                  </g>
+                  <!-- Barras agrupadas representativas -->
+                  <!-- TS Desarrollo -->
+                  <rect x="80" y="50" width="18" height="130" fill="url(#gradient-violet)" rx="4" />
+                  <text x="80" y="40" fill="#a1a1aa" font-size="10" font-family="Inter">88%</text>
+                  <!-- TS Redes -->
+                  <rect x="160" y="80" width="18" height="100" fill="url(#gradient-violet)" rx="4" />
+                  <text x="160" y="70" fill="#a1a1aa" font-size="10" font-family="Inter">75%</text>
+                  <!-- TS Hotelería -->
+                  <rect x="240" y="65" width="18" height="115" fill="url(#gradient-violet)" rx="4" />
+                  <text x="240" y="55" fill="#a1a1aa" font-size="10" font-family="Inter">81%</text>
+                  <!-- TS Enfermería -->
+                  <rect x="320" y="40" width="18" height="140" fill="url(#gradient-violet)" rx="4" />
+                  <text x="320" y="30" fill="#a1a1aa" font-size="10" font-family="Inter">93%</text>
+                  <!-- TS Marketing -->
+                  <rect x="400" y="90" width="18" height="90" fill="url(#gradient-violet)" rx="4" />
+                  <text x="400" y="80" fill="#a1a1aa" font-size="10" font-family="Inter">70%</text>
+                  
+                  <!-- Etiquetas del Eje X -->
+                  <text x="75" y="195" fill="#71717a" font-size="9" font-family="Outfit">Software</text>
+                  <text x="155" y="195" fill="#71717a" font-size="9" font-family="Outfit">Redes</text>
+                  <text x="235" y="195" fill="#71717a" font-size="9" font-family="Outfit">Hotelería</text>
+                  <text x="315" y="195" fill="#71717a" font-size="9" font-family="Outfit">Enfermería</text>
+                  <text x="395" y="195" fill="#71717a" font-size="9" font-family="Outfit">Marketing</text>
+                  
+                  <!-- Gradientes -->
+                  <defs>
+                    <linearGradient id="gradient-violet" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#818cf8" />
+                      <stop offset="100%" stop-color="#4f46e5" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Feed en Vivo de Asistencias (Live Feed) -->
+            <div class="panel-card glass-panel">
+              <div class="panel-header">
+                <h3>Live Feed (Tiempo Real)</h3>
+                <span class="status-badge pulse-emerald">En Vivo</span>
+              </div>
+              <div class="live-feed-list" id="admin-live-feed">
+                <!-- Se alimenta dinámicamente con JS, agregamos estáticos iniciales -->
+                <div class="feed-item">
+                  <span class="time">18:15</span>
+                  <p><strong>Prof. Jorge Martínez</strong> firmó entrada digital (Aula 104 - Software).</p>
+                </div>
+                <div class="feed-item">
+                  <span class="time">18:08</span>
+                  <p>Asistencia completada para <strong>TS Software 1° Año</strong> (Presentes: 22 / Ausentes: 3).</p>
+                </div>
+                <div class="feed-item">
+                  <span class="time">17:59</span>
+                  <p><strong>Gómez, Lucas</strong> registró asistencia vía QR en <i>Análisis Matemático</i>.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 3: ADMIN JUSTIFICATIONS ==================== -->
+        <section id="view-admin-justifications" class="canvas-view">
+          <div class="justifications-layout">
+            <div class="justifications-sidebar glass-panel">
+              <h3>Solicitudes Pendientes</h3>
+              <div class="justifications-list" id="just-list-container">
+                <!-- Generados por JS o estáticos interactivos -->
+                <div class="just-item active" data-id="1">
+                  <div class="just-header">
+                    <h4>Lucas Gómez</h4>
+                    <span class="badge badge-warning">Médico</span>
+                  </div>
+                  <p class="just-meta">TS Software 1° Año - 04/05/2026</p>
+                </div>
+                <div class="just-item" data-id="2">
+                  <div class="just-header">
+                    <h4>Sofía Martínez</h4>
+                    <span class="badge badge-info">Examen</span>
+                  </div>
+                  <p class="just-meta">TS Software 2° Año - 03/05/2026</p>
+                </div>
+                <div class="just-item" data-id="3">
+                  <div class="just-header">
+                    <h4>Prof. Jorge Martínez</h4>
+                    <span class="badge badge-danger">Licencia</span>
+                  </div>
+                  <p class="just-meta">Profesor de Redes - 02/05/2026</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Previsualización de Justificación de Split-Screen -->
+            <div class="justifications-detail glass-panel" id="just-detail-panel">
+              <div class="detail-header">
+                <h2 id="just-student-name">Lucas Gómez</h2>
+                <span class="badge badge-warning" id="just-type-badge">Médico</span>
+              </div>
+              <div class="detail-grid">
+                <div class="detail-info">
+                  <p><strong>Carrera / Rol:</strong> <span id="just-user-career">TS Software 1° Año</span></p>
+                  <p><strong>Inasistencia del Día:</strong> <span id="just-date">04 de Mayo, 2026</span></p>
+                  <p><strong>Materia(s) afectada(s):</strong> <span id="just-subjects">Análisis Matemático, Programación I</span></p>
+                  <p><strong>Descripción / Motivo:</strong></p>
+                  <p class="just-desc-text" id="just-reason">"Presento certificado médico por cuadro de gastroenteritis aguda que requirió reposo domiciliario por 24 horas."</p>
+                </div>
+                <div class="detail-certificate-preview">
+                  <div class="certificate-container">
+                    <div class="certificate-header">
+                      <span>Preview de Certificado</span>
+                    </div>
+                    <div class="certificate-body">
+                      <div class="simulated-medical-cert">
+                        <h4>🏥 Sanatorio Central</h4>
+                        <p class="cert-date">Fecha: 04/05/2026</p>
+                        <p class="cert-patient">Paciente: Lucas Gómez</p>
+                        <div class="cert-rx">
+                          <p>Se prescribe reposo de 24 horas por cuadro febril y gastrointestinal agudo.</p>
+                        </div>
+                        <div class="cert-signature">
+                          <p>______________________</p>
+                          <p>Dr. Carlos Rossi - Mat. 12894</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="detail-actions">
+                <button class="btn btn-outline-danger" id="btn-reject-justification">Rechazar Solicitud</button>
+                <button class="btn btn-success" id="btn-approve-justification">✓ Aprobar e Imputar Asistencia</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 4: ADMIN EARLY WARNING ==================== -->
+        <section id="view-admin-early-warning" class="canvas-view">
+          <div class="early-warning-container glass-panel">
+            <div class="panel-header">
+              <h3>Monitoreo de Alerta Temprana (Prevención de Pérdida de Regularidad)</h3>
+              <p class="text-muted">Alumnos con asistencia total por debajo del 75% o en zona de riesgo (70% - 80%).</p>
+            </div>
+            <div class="search-bar-row">
+              <input type="text" id="search-early-warning" placeholder="Buscar alumno por nombre o legajo...">
+              <select id="filter-career">
+                <option value="all">Todas las carreras</option>
+                <option value="software">TS Desarrollo de Software</option>
+                <option value="redes">TS Redes e Infraestructura</option>
+              </select>
+            </div>
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>Alumno</th>
+                  <th>Carrera / Curso</th>
+                  <th>Asistencia Promedio</th>
+                  <th>Faltas Totales</th>
+                  <th>Estado de Riesgo</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="risk-row-danger">
+                  <td><strong>Diego Álvarez</strong><br><span class="text-muted">Legajo L33894</span></td>
+                  <td>TS Software - 1° Año</td>
+                  <td><span class="percentage text-danger">65.2%</span></td>
+                  <td>14.5 Faltas</td>
+                  <td><span class="badge badge-danger">Riesgo Crítico</span></td>
+                  <td><button class="btn btn-xs btn-primary btn-alert-student" data-student="Diego Álvarez">🔔 Enviar Alerta</button></td>
+                </tr>
+                <tr class="risk-row-danger">
+                  <td><strong>María Florencia Peña</strong><br><span class="text-muted">Legajo L31204</span></td>
+                  <td>TS Redes - 2° Año</td>
+                  <td><span class="percentage text-danger">68.1%</span></td>
+                  <td>12.0 Faltas</td>
+                  <td><span class="badge badge-danger">Riesgo Crítico</span></td>
+                  <td><button class="btn btn-xs btn-primary btn-alert-student" data-student="María Florencia Peña">🔔 Enviar Alerta</button></td>
+                </tr>
+                <tr class="risk-row-warning">
+                  <td><strong>Tomas Heredia</strong><br><span class="text-muted">Legajo L32948</span></td>
+                  <td>TS Software - 1° Año</td>
+                  <td><span class="percentage text-warning">72.4%</span></td>
+                  <td>10.5 Faltas</td>
+                  <td><span class="badge badge-warning">En Observación</span></td>
+                  <td><button class="btn btn-xs btn-primary btn-alert-student" data-student="Tomas Heredia">🔔 Enviar Alerta</button></td>
+                </tr>
+                <tr class="risk-row-warning">
+                  <td><strong>Camila Sosa</strong><br><span class="text-muted">Legajo L30948</span></td>
+                  <td>TS Software - 2° Año</td>
+                  <td><span class="percentage text-warning">74.8%</span></td>
+                  <td>9.0 Faltas</td>
+                  <td><span class="badge badge-warning">En Observación</span></td>
+                  <td><button class="btn btn-xs btn-primary btn-alert-student" data-student="Camila Sosa">🔔 Enviar Alerta</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 5: ADMIN REPORTS ==================== -->
+        <section id="view-admin-reports" class="canvas-view">
+          <div class="reports-container glass-panel">
+            <div class="report-filters">
+              <div class="filter-group">
+                <label>Carrera</label>
+                <select><option>TS Desarrollo de Software</option></select>
+              </div>
+              <div class="filter-group">
+                <label>Materia</label>
+                <select><option>Análisis Matemático</option></select>
+              </div>
+              <div class="filter-group">
+                <label>Mes</label>
+                <select><option>Mayo 2026</option></select>
+              </div>
+              <div class="filter-group button-group-reports">
+                <button class="btn btn-primary">Generar Planilla</button>
+                <button class="btn btn-outline" id="btn-export-excel">📥 Exportar Excel</button>
+              </div>
+            </div>
+            
+            <div class="matrix-report-table-wrapper">
+              <table class="matrix-table">
+                <thead>
+                  <tr>
+                    <th class="sticky-col">Estudiante</th>
+                    <th>01/05</th>
+                    <th>04/05</th>
+                    <th>05/05</th>
+                    <th>06/05</th>
+                    <th>07/05</th>
+                    <th>08/05</th>
+                    <th>11/05</th>
+                    <th>12/05</th>
+                    <th>13/05</th>
+                    <th>% Asis</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="sticky-col"><strong>Gómez, Lucas</strong></td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-a">A</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td><strong>88.8%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col"><strong>Álvarez, Diego</strong></td>
+                    <td class="asis-a">A</td>
+                    <td class="asis-a">A</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-a">A</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-a">A</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-a">A</td>
+                    <td class="text-danger"><strong>44.4%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col"><strong>Martínez, Sofía</strong></td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td><strong>100%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col"><strong>Sosa, Camila</strong></td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-t">T</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-a">A</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td class="asis-p">P</td>
+                    <td><strong>77.7%</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 6: TEACHER DASHBOARD ==================== -->
+        <section id="view-teacher-dash" class="canvas-view">
+          <div class="teacher-dash-layout">
+            
+            <div class="teacher-main-col">
+              <!-- Clase del Día / Acción Destacada -->
+              <div class="featured-card glass-panel border-left-violet">
+                <div class="featured-header">
+                  <span class="active-tag animate-pulse">CLASE ACTUAL</span>
+                  <span class="time-range">18:30 - 20:30 hs</span>
+                </div>
+                <h2>TS Desarrollo de Software - 1° Año</h2>
+                <h3>Análisis Matemático</h3>
+                <p class="text-muted">Aula: 104 (Primer Piso) | Alumnos inscriptos: 25</p>
+                
+                <div class="featured-actions">
+                  <button class="btn btn-primary" id="btn-quick-roll-call">📝 Tomar Asistencia (Llamado Directo)</button>
+                  <button class="btn btn-outline" id="btn-project-qr-current">📡 Proyectar Código QR en Pantalla</button>
+                </div>
+              </div>
+
+              <!-- Cronograma Semanal del Docente -->
+              <div class="panel-card glass-panel mt-4">
+                <div class="panel-header">
+                  <h3>Mis Materias y Comisiones</h3>
+                </div>
+                <div class="subject-schedule-list">
+                  <div class="schedule-item">
+                    <div class="subj-info">
+                      <h4>Análisis Matemático</h4>
+                      <p>TS Software - 1° Año | Lunes y Miércoles 18:30hs</p>
+                    </div>
+                    <span class="badge badge-success">88% Promedio Asis</span>
+                  </div>
+                  <div class="schedule-item">
+                    <div class="subj-info">
+                      <h4>Programación Orientada a Objetos</h4>
+                      <p>TS Software - 2° Año | Martes y Jueves 19:00hs</p>
+                    </div>
+                    <span class="badge badge-success">91% Promedio Asis</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna lateral: Estado del Docente -->
+            <div class="teacher-side-col">
+              <div class="clockin-status-card glass-panel">
+                <h3>Presentismo Docente</h3>
+                <p class="text-muted">Firma digital de asistencia para el cobro de horas cátedra.</p>
+                <div class="clockin-visual text-center" id="docent-clockin-status">
+                  <div class="clockin-circle status-absent">❌</div>
+                  <p class="status-text font-bold text-danger">Sin firmar el día de hoy</p>
+                </div>
+                <button class="btn btn-primary btn-block" id="btn-sidebar-clockin">Ir a Firmar Presentismo</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 7: TEACHER CLOCK-IN ==================== -->
+        <section id="view-teacher-clockin" class="canvas-view">
+          <div class="clockin-detailed-container">
+            <div class="clockin-card glass-panel">
+              <div class="clockin-header text-center">
+                <h2>Firma Digital de Asistencia</h2>
+                <p>Registra tu entrada y salida institucional en el establecimiento</p>
+              </div>
+              
+              <div class="realtime-clock-display text-center">
+                <div id="large-clock-time">18:32:00</div>
+                <div id="large-clock-date">Miércoles, 06 de Mayo de 2026</div>
+              </div>
+
+              <div class="geofencing-indicator alert-panel" id="geofencing-box">
+                <div class="alert-icon">📍</div>
+                <div class="alert-content">
+                  <h4>Ubicación GPS: DETECTADA</h4>
+                  <p>Te encuentras dentro del radio autorizado del establecimiento (Instituto Central).</p>
+                </div>
+              </div>
+
+              <div class="clockin-actions">
+                <button class="btn btn-success btn-large" id="btn-action-clock-in">📥 Firmar Entrada (18:32hs)</button>
+                <button class="btn btn-outline-danger btn-large" id="btn-action-clock-out" disabled>📤 Firmar Salida</button>
+              </div>
+
+              <!-- Registro de firmas recientes -->
+              <div class="clockin-log mt-4">
+                <h3>Firmas Recientes</h3>
+                <div class="log-entries">
+                  <div class="log-entry">
+                    <span>Lunes 04/05/2026</span>
+                    <span class="text-success font-bold">Entrada: 18:25</span>
+                    <span class="text-amber font-bold">Salida: 20:30</span>
+                  </div>
+                  <div class="log-entry">
+                    <span>Miércoles 29/04/2026</span>
+                    <span class="text-success font-bold">Entrada: 18:28</span>
+                    <span class="text-amber font-bold">Salida: 20:35</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 8: TEACHER ATTENDANCE (INTERACTIVE ROLL CALL) ==================== -->
+        <section id="view-teacher-attendance" class="canvas-view">
+          <div class="roll-call-layout glass-panel">
+            <div class="roll-call-header">
+              <div class="subj-meta">
+                <h2>Toma de Asistencia</h2>
+                <p>Análisis Matemático - TS Software 1° Año</p>
+              </div>
+              <div class="roll-call-stats">
+                <div class="stat-badge pr">P: <span id="count-present">0</span></div>
+                <div class="stat-badge ab">A: <span id="count-absent">0</span></div>
+                <div class="stat-badge ta">T: <span id="count-late">0</span></div>
+                <div class="stat-badge ju">J: <span id="count-justified">0</span></div>
+              </div>
+            </div>
+
+            <!-- Buscador rápido en el aula -->
+            <div class="search-student-row">
+              <input type="text" id="input-search-student" placeholder="Buscar estudiante en la lista...">
+              <button class="btn btn-outline" id="btn-mark-all-present">Marcar Todos Presentes</button>
+            </div>
+
+            <!-- Lista de Alumnos Táctil -->
+            <div class="student-roll-call-list" id="student-list-roll-call">
+              <!-- Cargado dinámicamente, incluimos de ejemplo -->
+              <div class="student-row" data-id="s1">
+                <div class="stud-profile">
+                  <div class="stud-avatar text-violet">LG</div>
+                  <div class="stud-details">
+                    <h4>Gómez, Lucas</h4>
+                    <span>Legajo L31294</span>
+                  </div>
+                </div>
+                <div class="stud-status-selectors">
+                  <button class="status-selector btn-p" data-status="P">P</button>
+                  <button class="status-selector btn-a" data-status="A">A</button>
+                  <button class="status-selector btn-t" data-status="T">T</button>
+                  <button class="status-selector btn-j" data-status="J">J</button>
+                </div>
+              </div>
+
+              <div class="student-row" data-id="s2">
+                <div class="stud-profile">
+                  <div class="stud-avatar text-violet">MS</div>
+                  <div class="stud-details">
+                    <h4>Martínez, Sofía</h4>
+                    <span>Legajo L32094</span>
+                  </div>
+                </div>
+                <div class="stud-status-selectors">
+                  <button class="status-selector btn-p" data-status="P">P</button>
+                  <button class="status-selector btn-a" data-status="A">A</button>
+                  <button class="status-selector btn-t" data-status="T">T</button>
+                  <button class="status-selector btn-j" data-status="J">J</button>
+                </div>
+              </div>
+
+              <div class="student-row" data-id="s3">
+                <div class="stud-profile">
+                  <div class="stud-avatar text-violet">AD</div>
+                  <div class="stud-details">
+                    <h4>Álvarez, Diego</h4>
+                    <span>Legajo L33894</span>
+                  </div>
+                </div>
+                <div class="stud-status-selectors">
+                  <button class="status-selector btn-p" data-status="P">P</button>
+                  <button class="status-selector btn-a" data-status="A">A</button>
+                  <button class="status-selector btn-t" data-status="T">T</button>
+                  <button class="status-selector btn-j" data-status="J">J</button>
+                </div>
+              </div>
+
+              <div class="student-row" data-id="s4">
+                <div class="stud-profile">
+                  <div class="stud-avatar text-violet">SC</div>
+                  <div class="stud-details">
+                    <h4>Sosa, Camila</h4>
+                    <span>Legajo L30948</span>
+                  </div>
+                </div>
+                <div class="stud-status-selectors">
+                  <button class="status-selector btn-p" data-status="P">P</button>
+                  <button class="status-selector btn-a" data-status="A">A</button>
+                  <button class="status-selector btn-t" data-status="T">T</button>
+                  <button class="status-selector btn-j" data-status="J">J</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="roll-call-footer">
+              <button class="btn btn-primary" id="btn-save-attendance-roll-call">✓ Guardar y Cerrar Asistencia del Día</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 9: TEACHER QR PRESENTER ==================== -->
+        <section id="view-teacher-qr" class="canvas-view">
+          <div class="qr-presenter-container text-center">
+            <div class="qr-card glass-panel">
+              <h2>Asistencia por QR Dinámico</h2>
+              <p class="text-muted">Proyecta esta pantalla en el aula. Los alumnos deben escanearlo desde la App para registrar su asistencia.</p>
+              
+              <div class="qr-animation-wrapper">
+                <div class="qr-outer-glow"></div>
+                <div class="qr-code-box">
+                  <!-- QR simulado por CSS y SVG de alta fidelidad -->
+                  <svg class="simulated-qr" viewBox="0 0 100 100" id="qr-svg-rotating">
+                    <rect x="0" y="0" width="100" height="100" fill="#fff" />
+                    <!-- Patrones de esquinas QR típicas -->
+                    <rect x="5" y="5" width="25" height="25" fill="#000" />
+                    <rect x="9" y="9" width="17" height="17" fill="#fff" />
+                    <rect x="12" y="12" width="11" height="11" fill="#000" />
+
+                    <rect x="70" y="5" width="25" height="25" fill="#000" />
+                    <rect x="74" y="9" width="17" height="17" fill="#fff" />
+                    <rect x="77" y="12" width="11" height="11" fill="#000" />
+
+                    <rect x="5" y="70" width="25" height="25" fill="#000" />
+                    <rect x="9" y="74" width="17" height="17" fill="#fff" />
+                    <rect x="12" y="77" width="11" height="11" fill="#000" />
+                    
+                    <!-- Puntos de datos simulados -->
+                    <g id="qr-dynamic-dots" fill="#000">
+                      <rect x="40" y="10" width="8" height="5" />
+                      <rect x="55" y="15" width="5" height="12" />
+                      <rect x="42" y="45" width="15" height="6" />
+                      <rect x="75" y="45" width="12" height="12" />
+                      <rect x="45" y="75" width="22" height="8" />
+                      <rect x="80" y="80" width="10" height="10" />
+                    </g>
+                  </svg>
+                </div>
+              </div>
+
+              <div class="qr-countdown-indicator">
+                <span class="timer-tag">Código Seguro Dinámico</span>
+                <p>Se regenera automáticamente en: <strong id="qr-timer-seconds" class="text-violet">15s</strong></p>
+                <div class="progress-bar-container">
+                  <div class="progress-bar-fill" id="qr-timer-progress"></div>
+                </div>
+              </div>
+
+              <div class="qr-realtime-scans mt-4">
+                <h3>Estudiantes Registrados en Aula: <strong id="qr-scan-count" class="text-emerald">14</strong></h3>
+                <div class="scan-avatars-list" id="qr-scan-avatars">
+                  <span class="scanned-avatar" title="Lucas Gómez">LG</span>
+                  <span class="scanned-avatar" title="Sofía Martínez">SM</span>
+                  <span class="scanned-avatar" title="Camila Sosa">CS</span>
+                  <span class="scanned-avatar" title="Tomás Heredia">TH</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 10: STUDENT DASHBOARD ==================== -->
+        <section id="view-student-dash" class="canvas-view">
+          <div class="student-dash-layout">
+            
+            <div class="student-main-col">
+              <!-- KPI de Regularidad Global -->
+              <div class="featured-card glass-panel border-left-emerald">
+                <div class="featured-header">
+                  <span class="active-tag animate-pulse">ESTADO REGULAR</span>
+                  <span class="academic-year">Año Lectivo 2026</span>
+                </div>
+                <h2>Mi Porcentaje General de Asistencia</h2>
+                <div class="regularity-visual-row">
+                  <div class="regularity-gauge">
+                    <span class="gauge-value text-emerald">88.5%</span>
+                  </div>
+                  <div class="gauge-meta">
+                    <p>Faltas acumuladas: <strong>3.0 Faltas</strong></p>
+                    <p>Límite permitido de faltas: <strong>10.0 Faltas</strong> (Para mantener regularidad)</p>
+                    <p class="text-success">✓ Felicitaciones, estás en zona segura (Requerido: 75%).</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Listado de Porcentajes por Materia -->
+              <div class="panel-card glass-panel mt-4">
+                <div class="panel-header">
+                  <h3>Mis Materias Cursadas</h3>
+                </div>
+                <div class="student-subjects-list">
+                  
+                  <div class="subject-row-card">
+                    <div class="subj-meta-info">
+                      <h4>Análisis Matemático</h4>
+                      <p>Asistidas: 8 clases | Inasistencias: 1</p>
+                    </div>
+                    <div class="subj-progress-container">
+                      <span class="progress-percentage text-emerald">88%</span>
+                      <div class="progress-bar-container"><div class="progress-bar-fill bg-emerald" style="width: 88%;"></div></div>
+                    </div>
+                  </div>
+
+                  <div class="subject-row-card">
+                    <div class="subj-meta-info">
+                      <h4>Programación I</h4>
+                      <p>Asistidas: 9 clases | Inasistencias: 0</p>
+                    </div>
+                    <div class="subj-progress-container">
+                      <span class="progress-percentage text-emerald">100%</span>
+                      <div class="progress-bar-container"><div class="progress-bar-fill bg-emerald" style="width: 100%;"></div></div>
+                    </div>
+                  </div>
+
+                  <div class="subject-row-card">
+                    <div class="subj-meta-info">
+                      <h4>Sistemas Operativos</h4>
+                      <p>Asistidas: 5 clases | Inasistencias: 2</p>
+                    </div>
+                    <div class="subj-progress-container">
+                      <span class="progress-percentage text-warning">71%</span>
+                      <div class="progress-bar-container"><div class="progress-bar-fill bg-warning" style="width: 71%;"></div></div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- Barra lateral: Acciones Rápidas -->
+            <div class="student-side-col">
+              <div class="quick-scanner-card glass-panel text-center">
+                <h3>Asistencia en Aula</h3>
+                <p class="text-muted">¿Estás en el aula con el profesor? Escanea el código QR proyectado para dar tu presente.</p>
+                <button class="btn btn-primary btn-block mt-4 btn-large" id="btn-open-student-scanner">📱 Abrir Escáner de Aula</button>
+              </div>
+
+              <div class="quick-scanner-card glass-panel text-center mt-4">
+                <h3>Justificación</h3>
+                <p class="text-muted">¿Faltaste a clase? Carga tu certificado para justificar tu inasistencia académica.</p>
+                <button class="btn btn-outline btn-block mt-4" id="btn-open-student-justification">📥 Cargar Certificado</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 11: STUDENT SCANNER ==================== -->
+        <section id="view-student-scanner" class="canvas-view">
+          <div class="student-scanner-container text-center">
+            <div class="scanner-card glass-panel">
+              <h2>Escáner de Aula Dinámico</h2>
+              <p class="text-muted">Apunta la cámara de tu celular hacia el código QR proyectado en la pantalla del salón.</p>
+              
+              <!-- Simulación de cámara activa de teléfono -->
+              <div class="simulated-camera-view" id="camera-viewport">
+                <div class="scan-target-box">
+                  <div class="corner top-left"></div>
+                  <div class="corner top-right"></div>
+                  <div class="corner bottom-left"></div>
+                  <div class="corner bottom-right"></div>
+                  <div class="laser-scanner-line"></div>
+                  <div class="camera-lens-sim">📸 Cámara Simulada Activa</div>
+                </div>
+              </div>
+
+              <div class="scanner-actions mt-4">
+                <button class="btn btn-primary btn-large" id="btn-simulate-successful-scan">Simular Lectura de QR</button>
+                <button class="btn btn-outline" id="btn-cancel-scan">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 12: STUDENT JUSTIFICATION ==================== -->
+        <section id="view-student-justification" class="canvas-view">
+          <div class="student-justification-container">
+            <div class="justification-form-card glass-panel">
+              <h2>Carga de Justificativo Médico / Laboral</h2>
+              <p class="text-muted">Completa los campos y sube una fotografía del comprobante. Será validado por preceptoría.</p>
+              
+              <form id="form-upload-justification" onsubmit="event.preventDefault();">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="just-select-date">Fecha de Inasistencia</label>
+                    <input type="date" id="just-select-date" required value="2026-05-04">
+                  </div>
+                  <div class="form-group">
+                    <label for="just-select-reason">Motivo de Inasistencia</label>
+                    <select id="just-select-reason" required>
+                      <option value="Médico">Certificado Médico</option>
+                      <option value="Examen">Examen en otra institución</option>
+                      <option value="Laboral">Certificado de Trabajo</option>
+                      <option value="Personal">Fuerza Mayor / Trámite</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="just-input-desc">Descripción / Observación</label>
+                  <textarea id="just-input-desc" rows="3" placeholder="Ingresa algún detalle para preceptoría..." required>Reposo médico prescrito por cuadro febril.</textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>Fotografía o Documento del Certificado</label>
+                  <div class="drag-drop-zone" id="cert-drag-zone">
+                    <span class="icon">📁</span>
+                    <p class="drag-title">Arrastra tu certificado médico aquí o haz clic para buscar</p>
+                    <p class="drag-sub">Formatos permitidos: PDF, JPG, PNG (Max: 5MB)</p>
+                    <div id="selected-file-badge" class="badge badge-success mt-2" style="display: none;">✓ certificado_medico_gomez.pdf</div>
+                  </div>
+                </div>
+
+                <div class="form-actions-row">
+                  <button type="button" class="btn btn-outline" id="btn-cancel-justification-upload">Volver</button>
+                  <button type="submit" class="btn btn-primary" id="btn-submit-justification">Enviar Solicitud a Preceptoría</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== VIEW 13: SETTINGS (THE SIMPLEST VIEW) ==================== -->
+        <section id="view-settings" class="canvas-view">
+          <div class="settings-container glass-panel">
+            <div class="settings-header">
+              <h2>Preferencias de Alertas y Canales</h2>
+              <p class="text-muted">Personaliza cómo y cuándo recibir alertas críticas del sistema. Configuración granular rápida.</p>
+            </div>
+
+            <div class="settings-sections">
+              <div class="setting-group-box">
+                <h3>🔔 Notificaciones para Alumnos</h3>
+                
+                <div class="toggle-row">
+                  <div class="toggle-label">
+                    <h4>Avisos por Ausencia Docente</h4>
+                    <p>Recibe una alerta si un profesor firma ausencia o licencia para una materia que cursas hoy.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-teacher-absent" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-row">
+                  <div class="toggle-label">
+                    <h4>Alerta de Umbral de Regularidad</h4>
+                    <p>Avisar cuando mi promedio en cualquier materia baje del 80% (zona de advertencia).</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-low-attendance" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="setting-group-box mt-4">
+                <h3>📢 Notificaciones Generales</h3>
+
+                <div class="toggle-row">
+                  <div class="toggle-label">
+                    <h4>Estado de Trámite de Justificación</h4>
+                    <p>Recibir notificaciones cuando preceptoría apruebe o rechace un certificado médico cargado.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-justification-status" checked>
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-row">
+                  <div class="toggle-label">
+                    <h4>Resumen Semanal de Asistencia (Profesores)</h4>
+                    <p>Enviar recordatorio automático los viernes si quedan clases sin toma de asistencia registrada.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" id="pref-teacher-reminders">
+                    <span class="slider round"></span>
+                  </label>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="settings-footer mt-4">
+              <button class="btn btn-primary" id="btn-save-settings">Guardar Cambios</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Toast de Notificaciones Flotante (Glow FX) -->
+  <div class="toast-container" id="toast-wrapper"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
