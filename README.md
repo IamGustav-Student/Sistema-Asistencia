@@ -43,7 +43,15 @@ El diseño de la base de datos relacional está basado directamente en el releva
 
 El script completo de creación de base de datos y carga de datos de prueba está guardado en el archivo [schema.sql](file:///C:/Users/iamgu/.gemini/antigravity/scratch/sistema-asistencia-canvas/schema.sql).
 
+> 📊 **Recurso Interactivo de Presentación**: He diseñado un visualizador gráfico autoportante y dinámico en [diagrama.html](file:///C:/Users/iamgu/.gemini/antigravity/scratch/sistema-asistencia-canvas/diagrama.html) que puedes abrir en tu navegador para ver, acercar/alejar, centrar y exportar el diagrama de forma profesional. También puedes ver la versión de imagen estática en [diagrama_db.png](file:///C:/Users/iamgu/.gemini/antigravity/scratch/sistema-asistencia-canvas/diagrama_db.png).
+
 ### Diagrama de Entidad-Relación (DER)
+
+Este es el diagrama relacional autogenerado con las llaves primarias (`PK`) y foráneas (`FK`) de cada tabla:
+
+![Diagrama de Base de Datos Relacional](diagrama_db.png)
+
+#### Representación de Flujo (Mermaid)
 
 ```mermaid
 erDiagram
