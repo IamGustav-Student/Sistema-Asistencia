@@ -37,6 +37,47 @@ El sistema ha sido desarrollado bajo los estándares de una **Single Page Applic
 
 ---
 
+## 🗄️ Modelo y Diseño de Base de Datos (DER)
+
+El diseño de la base de datos relacional está basado directamente en el relevamiento de la pizarra física (**PP III**) y ha sido adaptado con restricciones de integridad referencial, normalización estándar, claves primarias y foráneas, e índices de alto rendimiento para soportar las consultas del sistema de asistencias.
+
+El script completo de creación de base de datos y carga de datos de prueba está guardado en el archivo [schema.sql](file:///C:/Users/iamgu/.gemini/antigravity/scratch/sistema-asistencia-canvas/schema.sql).
+
+### Diagrama de Entidad-Relación (DER)
+
+```mermaid
+erDiagram
+    USUARIOS ||--o{ USUARIOS_ROLES : "tiene"
+    ROLES ||--o{ USUARIOS_ROLES : "asignado"
+    USUARIOS ||--|| Login : "posee"
+    COHORTE ||--o{ CARRERAS_COHORTES : "incluye"
+    CARRERAS ||--o{ CARRERAS_COHORTES : "contiene"
+    CARRERAS ||--o{ CARRERAS_MATERIAS : "cursa"
+    MATERIAS ||--o{ CARRERAS_MATERIAS : "pertenece"
+    USUARIOS ||--o{ ASISTENCIAS : "registra"
+    MATERIAS ||--o{ ASISTENCIAS : "asiste_a"
+```
+
+### Detalle de Tablas y Atributos de Pizarra:
+
+#### 1. Entidades de Seguridad y Autenticación:
+*   **`USUARIOS`**: Almacena el padrón de la institución (DNI, apellido, nombre y un ID secuencial autoincremental).
+*   **`ROLES`**: Define los niveles de acceso. Ejemplo de datos de semilla: `Preceptor` (Id: 1), `Profesor` (Id: 2), `Alumno` (Id: 3).
+*   **`USUARIOS_ROLES`**: Tabla intermedia que permite relaciones de muchos a muchos ($N:M$) para soportar que un preceptor también pueda actuar como docente.
+*   **`Login`**: Almacena las credenciales de acceso de forma segura vinculadas uno a uno ($1:1$) con la tabla `USUARIOS` mediante la clave foránea `LoUSER`.
+
+#### 2. Entidades Académicas:
+*   **`CARRERAS`**: Listado de tecnicaturas superiores del establecimiento (ej. *Tecnicatura Superior en Desarrollo de Software*).
+*   **`COHORTE`**: Agrupación por año lectivo de ingreso de cada división (ej. *Cohorte 2026*).
+*   **`MATERIAS`**: Plan de estudios con especificación de modalidad (ej: *Presencial, Híbrido, Virtual*) y `MaCantModulos` que representa la carga horaria semanal expresada en bloques de clase.
+*   **`CARRERAS_COHORTES`** y **`CARRERAS_MATERIAS`**: Tablas relacionales intermedias que mapean y estructuran la currícula educativa de la institución.
+
+#### 3. Entidades de Control Presencial:
+*   **`ASISTENCIAS`**: El núcleo de la transacción del sistema. Registra cada marca presencial de alumnos y docentes vinculando `UsId` (quién asiste) y `MaId` (materia o clase a la que asiste), resguardando la fecha (`AsFecha`), el estado lógico de presencia (`AsPresente` booleano) y si posee justificativo aprobado por preceptoría (`AsJustificacion` booleano).
+*   **`MODULOS`**: Basado en el esquema de pizarra `DateTime M1 M2 M3 M4`, esta tabla estructura la distribución horaria estándar de las horas cátedra del Turno Noche (ej: *Módulo 1: 18:30 a 19:10 hs*, *Módulo 2: 19:10 a 19:50 hs*, etc.), permitiendo un control de presentismo parcial por bloque horario.
+
+---
+
 ## 👑 Módulos del Sistema y Roles Operativos
 
 La plataforma adapta su interfaz de forma dinámica según el rol del usuario que inicie sesión, inhabilitando o desplegando paneles enteros en la barra de navegación lateral.
