@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscripción a Carreras - Instituto 124</title>
+  <!-- Google Fonts: Outfit for titles, Inter for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Estilos específicos y refinamientos para la pantalla de registro */
+    .register-body {
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      overflow-y: auto;
+    }
+
+    .register-card-large {
+      width: 100%;
+      max-width: 600px;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .register-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .register-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .register-card-large {
+        padding: 24px 16px;
+      }
+    }
+
+    .register-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .register-header h2 {
+      font-family: var(--font-title);
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .register-header p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .form-group.span-full {
+      grid-column: span 2;
+    }
+
+    @media (max-width: 600px) {
+      .form-group.span-full {
+        grid-column: span 1;
+      }
+    }
+
+    /* Select styling override to look premium */
+    select.form-control {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      transition: var(--transition-smooth);
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px;
+    }
+
+    select.form-control:focus {
+      outline: none;
+      border-color: var(--clr-violet);
+      background-color: rgba(99, 102, 241, 0.03);
+      box-shadow: 0 0 0 3px var(--clr-violet-glow);
+    }
+
+    select.form-control option {
+      background-color: #0e0e11;
+      color: var(--text-primary);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 24px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-top: 3px;
+      accent-color: var(--clr-violet);
+    }
+
+    .checkbox-group a {
+      color: var(--clr-violet);
+      text-decoration: none;
+      transition: var(--transition-smooth);
+    }
+
+    .checkbox-group a:hover {
+      text-decoration: underline;
+    }
+
+    .form-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .form-footer a {
+      color: var(--clr-violet);
+      text-decoration: none;
+      font-weight: 500;
+      transition: var(--transition-smooth);
+    }
+
+    .form-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Modal / Success Box Animation */
+    .success-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(9, 9, 11, 0.95);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .success-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .success-card {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 40px;
+      width: 90%;
+      max-width: 480px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.9);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .success-overlay.show .success-card {
+      transform: scale(1);
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 2px solid var(--clr-emerald);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      margin: 0 auto 24px;
+      box-shadow: 0 0 20px var(--clr-emerald-glow);
+      animation: pulseEmerald 2s infinite;
+    }
+
+    .success-card h3 {
+      font-family: var(--font-title);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .success-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .success-card .student-id-tag {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: var(--font-title);
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    @keyframes pulseEmerald {
+      0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+  </style>
+</head>
+
+<body class="register-body">
+
+  <div class="register-card-large glass-panel">
+    <div class="register-header">
+      <div class="brand-logo" style="margin: 0 auto 16px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#6366f1" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <path d="M2 17L12 22L22 17" stroke="#6366f1" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+          <path d="M2 12L12 17L22 12" stroke="#6366f1" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </div>
+      <h2>Inscripción a Carrera</h2>
+      <p>Registrate como alumno regular del Instituto 124 para el ciclo académico vigente</p>
+    </div>
+
+    <form id="register-form">
+      <div class="register-grid">
+
+        <div class="form-group">
+          <label for="reg-nombre">Nombre</label>
+          <input type="text" id="reg-nombre" placeholder="Ej: Juan" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-apellido">Apellido</label>
+          <input type="text" id="reg-apellido" placeholder="Ej: Pérez" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-dni">DNI (Usuario de Acceso)</label>
+          <input type="text" id="reg-dni" placeholder="Ej: 38456123 (sin puntos)" inputmode="numeric"
+            pattern="[0-9]{7,8}" title="El DNI debe contener 8 dígitos numéricos" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-telefono">Teléfono Celular</label>
+          <input type="tel" id="reg-telefono" placeholder="Ej: 2284156291" required>
+        </div>
+
+        <div class="form-group span-full">
+          <label for="reg-email">Correo Electrónico</label>
+          <input type="email" id="reg-email" placeholder="ejemplo@instituto124.edu.ar o personal" required>
+        </div>
+
+        <div class="form-group span-full">
+          <label for="reg-carrera">Selecciona tu Carrera</label>
+          <select id="reg-carrera" class="form-control" required>
+            <option value="" disabled selected>Elige una carrera técnica...</option>
+            <option value="software">Tecnicatura Superior en Desarrollo de Software (TS Software)</option>
+            <option value="redes">Tecnicatura Superior en Adm. de Redes y Sistemas (TS Redes)</option>
+            <option value="hoteleria">Tecnicatura Superior en Administración Hotelera (TS Hotelería)</option>
+            <option value="enfermeria">Tecnicatura Superior en Enfermería (TS Enfermería)</option>
+            <option value="marketing">Tecnicatura Superior en Marketing Digital (TS Marketing)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password">Contraseña</label>
+          <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" minlength="6" required>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-password-confirm">Confirmar Contraseña</label>
+          <input type="password" id="reg-password-confirm" placeholder="Repite tu contraseña" minlength="6" required>
+        </div>
+
+      </div>
+
+      <label class="checkbox-group">
+        <input type="checkbox" required>
+        <span>Acepto las normas de convivencia escolar, el régimen de asistencia institucional y la política de
+          privacidad de datos del Instituto 124.</span>
+      </label>
+
+      <button type="submit" class="btn btn-primary btn-block">Inscribirse a Carrera</button>
+    </form>
+
+    <div class="form-footer">
+      ¿Ya estás registrado? <a href="index.html">Inicia sesión aquí</a>
+    </div>
+  </div>
+
+  <!-- Modal de Éxito Interactivo -->
+  <div class="success-overlay" id="success-modal">
+    <div class="success-card">
+      <div class="success-icon">✓</div>
+      <h3>¡Inscripción Exitosa!</h3>
+      <p>Te has registrado correctamente en el sistema de asistencia del Instituto 124. Tu usuario de acceso será tu
+        número de DNI.</p>
+      <div class="student-id-tag" id="success-student-info">DNI: - | Carrera: -</div>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0;">Redirigiéndote al portal de acceso en
+        <span id="countdown-timer">3</span> segundos...</p>
+    </div>
+  </div>
+
+  <!-- Toast system import / replication -->
+  <div id="toast-container"
+    style="position: fixed; bottom: 24px; right: 24px; z-index: 10000; display: flex; flex-direction: column; gap: 8px;">
+  </div>
+
+  <script>
+    // Sistema básico de Toasts interactivo para el registro
+    function createToast(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+
+      const toast = document.createElement("div");
+      toast.className = `glass-panel toast-item ${type}`;
+      toast.style.padding = "12px 20px";
+      toast.style.borderRadius = "8px";
+      toast.style.boxShadow = "var(--shadow-lg)";
+      toast.style.display = "flex";
+      toast.style.alignItems = "center";
+      toast.style.gap = "10px";
+      toast.style.fontSize = "0.85rem";
+      toast.style.animation = "fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)";
+      toast.style.background = "rgba(24, 24, 27, 0.9)";
+      toast.style.border = "1px solid var(--border-color)";
+      toast.style.minWidth = "280px";
+
+      let icon = "ℹ️";
+      if (type === "success") {
+        icon = "✅";
+        toast.style.borderLeft = "4px solid var(--clr-emerald)";
+      } else if (type === "danger" || type === "error") {
+        icon = "❌";
+        toast.style.borderLeft = "4px solid var(--clr-rose)";
+      } else if (type === "warning") {
+        icon = "⚠️";
+        toast.style.borderLeft = "4px solid var(--clr-amber)";
+      }
+
+      toast.innerHTML = `<span style="font-size: 1.1rem">${icon}</span> <div>${message}</div>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = "fadeOutDown 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards";
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Validación y lógica de envío del formulario
+    const registerForm = document.getElementById("register-form");
+    const successModal = document.getElementById("success-modal");
+    const successStudentInfo = document.getElementById("success-student-info");
+    const countdownTimer = document.getElementById("countdown-timer");
+
+    if (registerForm) {
+      registerForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById("reg-nombre").value.trim();
+        const apellido = document.getElementById("reg-apellido").value.trim();
+        const dni = document.getElementById("reg-dni").value.trim();
+        const carreraSelect = document.getElementById("reg-carrera");
+        const carreraNombre = carreraSelect.options[carreraSelect.selectedIndex].text;
+        const password = document.getElementById("reg-password").value;
+        const passwordConfirm = document.getElementById("reg-password-confirm").value;
+
+        // Validar que las contraseñas coincidan
+        if (password !== passwordConfirm) {
+          createToast("Las contraseñas no coinciden. Por favor, verifica.", "danger");
+          return;
+        }
+
+        // Simulación de registro exitoso en base de datos in-memory
+        successStudentInfo.textContent = `DNI: ${dni} | ${carreraNombre.split('(')[1].replace(')', '')}`;
+
+        // Guardar nuevo alumno en sessionStorage para que sea accesible en app.js si el usuario quiere probar
+        const mockDb = JSON.parse(sessionStorage.getItem("mock_registered_students") || "[]");
+        mockDb.push({
+          nombre,
+          apellido,
+          dni,
+          carrera: carreraNombre
+        });
+        sessionStorage.setItem("mock_registered_students", JSON.stringify(mockDb));
+
+        // Mostrar Modal de Éxito
+        successModal.classList.add("show");
+
+        // Cuenta regresiva para redirección interactiva
+        let seconds = 3;
+        const interval = setInterval(() => {
+          seconds--;
+          countdownTimer.textContent = seconds;
+          if (seconds <= 0) {
+            clearInterval(interval);
+            window.location.href = "index.html";
+          }
+        }, 1000);
+      });
+    }
+  </script>
+
+  <!-- Animaciones para Toasts -->
+  <style>
+    @keyframes fadeInUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOutDown {
+      from {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      to {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+    }
+  </style>
+
+</body>
+
+</html>

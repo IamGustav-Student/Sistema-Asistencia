@@ -53,6 +53,7 @@
             <li><button class="nav-btn" data-view="admin-justifications"><span class="icon">📁</span> Justificaciones</button></li>
             <li><button class="nav-btn" data-view="admin-early-warning"><span class="icon">⚠️</span> Alerta Temprana</button></li>
             <li><button class="nav-btn" data-view="admin-reports"><span class="icon">📊</span> Planilla Mensual</button></li>
+            <li><button class="nav-btn" data-view="admin-upload-students"><span class="icon">📥</span> Cargar Alumnos</button></li>
           </ul>
         </div>
 
@@ -89,19 +90,29 @@
           <span>🚪 Cerrar Sesión</span>
         </button>
         <div class="developer-credit">
-          Hecho con Antigravity
+          Instituto 124 - PP III
         </div>
       </div>
     </aside>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
     <!-- Main Workspace -->
     <main class="app-content">
       
       <!-- Top Bar / Header -->
       <header class="app-header">
-        <div class="header-left">
-          <h2 id="view-title">Login / Acceso</h2>
-          <p id="view-subtitle" class="text-muted">Ingresa tus credenciales o selecciona un perfil rápido para explorar.</p>
+        <div class="header-left-wrapper">
+          <button id="btn-menu-toggle" class="btn-menu-toggle" aria-label="Abrir menú de navegación">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div class="header-left">
+            <h2 id="view-title">Login / Acceso</h2>
+            <p id="view-subtitle" class="text-muted">Ingresa tus credenciales o selecciona un perfil rápido para explorar.</p>
+          </div>
         </div>
         <div class="header-right">
           <div id="header-time-widget" class="time-widget">
@@ -124,8 +135,8 @@
               </div>
               <form id="login-form" onsubmit="event.preventDefault();">
                 <div class="form-group">
-                  <label for="input-email">Email institucional o Legajo</label>
-                  <input type="text" id="input-email" placeholder="ejemplo@instituto124.edu.ar o L10928" required>
+                  <label for="input-dni">DNI del Usuario</label>
+                  <input type="text" id="input-dni" placeholder="Ej: 38456123 (sin puntos)" inputmode="numeric" pattern="[0-9]{7,8}" title="El DNI debe contener entre 7 y 8 dígitos numéricos, sin puntos" required>
                 </div>
                 <div class="form-group">
                   <div class="label-row">
@@ -137,6 +148,12 @@
                 <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit">Acceder</button>
               </form>
               
+              <div class="register-prompt" style="text-align: center; margin-top: 16px; font-size: 0.9rem; color: var(--text-secondary);">
+                ¿Sos alumno nuevo? <a href="registro.html" class="register-link" style="color: var(--clr-violet); text-decoration: none; font-weight: 500; transition: var(--transition-smooth);">Inscribite a una carrera aquí</a>
+              </div>
+              
+              
+              <!--
               <div class="divider">
                 <span>o accede con un solo clic</span>
               </div>
@@ -147,6 +164,7 @@
                   Google Workspace
                 </button>
               </div>
+            -->
 
               <div class="role-shortcuts">
                 <h3>💡 Accesos Rápidos de Simulación (Recomendado):</h3>
@@ -514,6 +532,81 @@
           </div>
         </section>
 
+        <!-- ==================== VIEW 5.5: ADMIN UPLOAD STUDENTS ==================== -->
+        <section id="view-admin-upload-students" class="canvas-view">
+          <div class="upload-students-layout glass-panel">
+            <div class="upload-header">
+              <h2>Carga Masiva de Alumnos</h2>
+              <p class="text-muted">Importa el listado completo de alumnos desde un archivo de Excel (.xlsx, .xls) o CSV de forma instantánea.</p>
+            </div>
+
+            <!-- KPIs de Carga -->
+            <div class="stats-grid mt-4">
+              <div class="stat-card glass-panel border-left-emerald">
+                <span class="stat-label">Registros Leídos</span>
+                <span class="stat-value" id="kpi-rows-read">0</span>
+                <p class="stat-meta text-muted">Filas detectadas en el archivo</p>
+              </div>
+              <div class="stat-card glass-panel border-left-violet">
+                <span class="stat-label">Listos para Importar</span>
+                <span class="stat-value" id="kpi-rows-valid">0</span>
+                <p class="stat-meta text-muted">Registros validados correctamente</p>
+              </div>
+              <div class="stat-card glass-panel border-left-rose">
+                <span class="stat-label">Errores / Duplicados</span>
+                <span class="stat-value" id="kpi-rows-error">0</span>
+                <p class="stat-meta text-muted">Filas con datos inválidos</p>
+              </div>
+            </div>
+
+            <!-- Zona de Carga Drag & Drop -->
+            <div class="excel-upload-zone mt-4">
+              <div class="excel-drop-zone" id="excel-drop-zone">
+                <span class="icon">📊</span>
+                <p class="drag-title">Arrastra tu planilla de Excel aquí o <span class="text-violet font-bold" style="cursor: pointer;">haz clic para examinar</span></p>
+                <p class="drag-sub text-muted">Soporta archivos .xlsx, .xls y .csv. Las columnas obligatorias son: DNI, Nombre, Apellido, Carrera</p>
+                <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" style="display: none;">
+              </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="upload-quick-actions mt-3">
+              <button class="btn btn-outline" id="btn-download-template">📥 Descargar Plantilla Excel</button>
+              <button class="btn btn-outline" id="btn-simulate-test-data" style="border-color: var(--clr-emerald); color: var(--clr-emerald);">⚡ Simular Carga de Prueba</button>
+            </div>
+
+            <!-- Listado Previsualización -->
+            <div class="preview-panel mt-4" id="preview-panel" style="display: none;">
+              <div class="panel-header">
+                <h3>Previsualización del Archivo Leído</h3>
+                <p class="text-muted">Revisa los datos antes de guardarlos. Puedes eliminar filas que no quieras importar.</p>
+              </div>
+              <div class="preview-table-wrapper mt-3">
+                <table class="premium-table">
+                  <thead>
+                    <tr>
+                      <th>DNI</th>
+                      <th>Nombre</th>
+                      <th>Apellido</th>
+                      <th>Carrera</th>
+                      <th>Estado</th>
+                      <th style="width: 80px; text-align: center;">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="preview-table-body">
+                    <!-- Filas insertadas dinámicamente -->
+                  </tbody>
+                </table>
+              </div>
+              <div class="preview-footer mt-4" style="display: flex; gap: 12px;">
+                <button class="btn btn-primary" id="btn-confirm-import">✓ Confirmar e Importar Alumnos</button>
+                <button class="btn btn-outline-danger" id="btn-cancel-import">Cancelar</button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
         <!-- ==================== VIEW 6: TEACHER DASHBOARD ==================== -->
         <section id="view-teacher-dash" class="canvas-view">
           <div class="teacher-dash-layout">
@@ -630,6 +723,7 @@
               <div class="subj-meta">
                 <h2>Toma de Asistencia</h2>
                 <p>Análisis Matemático - TS Software 1° Año</p>
+                <p style="font-size: 0.85rem; color: var(--clr-violet); margin-top: 4px;">Docente: <strong>Prof. Jorge Martínez</strong></p>
               </div>
               <div class="roll-call-stats">
                 <div class="stat-badge pr">P: <span id="count-present">0</span></div>
@@ -653,7 +747,6 @@
                   <div class="stud-avatar text-violet">LG</div>
                   <div class="stud-details">
                     <h4>Gómez, Lucas</h4>
-                    <span>Legajo L31294</span>
                   </div>
                 </div>
                 <div class="stud-status-selectors">
@@ -669,7 +762,6 @@
                   <div class="stud-avatar text-violet">MS</div>
                   <div class="stud-details">
                     <h4>Martínez, Sofía</h4>
-                    <span>Legajo L32094</span>
                   </div>
                 </div>
                 <div class="stud-status-selectors">
@@ -685,7 +777,6 @@
                   <div class="stud-avatar text-violet">AD</div>
                   <div class="stud-details">
                     <h4>Álvarez, Diego</h4>
-                    <span>Legajo L33894</span>
                   </div>
                 </div>
                 <div class="stud-status-selectors">
@@ -701,7 +792,6 @@
                   <div class="stud-avatar text-violet">SC</div>
                   <div class="stud-details">
                     <h4>Sosa, Camila</h4>
-                    <span>Legajo L30948</span>
                   </div>
                 </div>
                 <div class="stud-status-selectors">
@@ -1018,6 +1108,7 @@
   <!-- Toast de Notificaciones Flotante (Glow FX) -->
   <div class="toast-container" id="toast-wrapper"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

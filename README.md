@@ -175,4 +175,4 @@ Este prototipo sienta las bases interactivas del sistema. Las próximas fases de
 
 ---
 
-*Desarrollado y optimizado con pasión para el Instituto 124 por el equipo de Antigravity.*
+*Desarrollado y optimizado con pasión para el Instituto 124.*

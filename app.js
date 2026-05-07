@@ -107,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "student-dash": { title: "Dashboard del Alumno", subtitle: "Transparencia de asistencia individual, cálculo automático de regularidad y alertas." },
     "student-scanner": { title: "Escáner QR de Aula", subtitle: "Simula el escaneo del código QR del profesor desde la aplicación del alumno." },
     "student-justification": { title: "Carga de Certificados Médicos", subtitle: "Carga digital para la validación automática de inasistencias por preceptoría." },
+    "admin-upload-students": { title: "Carga Masiva de Alumnos desde Excel", subtitle: "Importación directa por planilla XLSX/XLS/CSV con validación de datos en tiempo real." },
     "settings": { title: "Configuración de Preferencias", subtitle: "La vista más simple. Selectores sencillos de notificaciones y alertas críticas." }
   };
 
@@ -196,13 +197,53 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Handle traditional submit login
+  // Handle traditional submit login with DNI
   if (loginForm) {
     loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      // Default fallback as preceptor for testing
-      applyRolePermissions("preceptor");
-      createToast("¡Sesión iniciada correctamente!", "success");
+      
+      const inputDni = document.getElementById("input-dni");
+      const dniValue = inputDni ? inputDni.value.trim() : "";
+      
+      if (!dniValue) return;
+
+      // Determinar rol simulado según el DNI ingresado
+      let assignedRole = "alumno"; // Rol por defecto
+      let roleLabel = "Alumno Regular";
+
+      // Lógica dinámica interactiva para simular múltiples roles mediante DNI:
+      // Si empieza con 1 (ej: 11111111) -> Preceptor
+      if (dniValue.startsWith("1")) {
+        assignedRole = "preceptor";
+        roleLabel = "Preceptor (Admin)";
+      } 
+      // Si empieza con 2 (ej: 22222222) -> Profesor
+      else if (dniValue.startsWith("2")) {
+        assignedRole = "profesor";
+        roleLabel = "Docente";
+      }
+      // Si empieza con cualquier otro dígito (ej: 33333333 o 40000000) -> Alumno
+      else {
+        assignedRole = "alumno";
+        roleLabel = "Alumno Regular";
+
+        // Verificar si es un alumno registrado dinámicamente en registro.html
+        try {
+          const mockDb = JSON.parse(sessionStorage.getItem("mock_registered_students") || "[]");
+          const registeredUser = mockDb.find(u => u.dni === dniValue);
+          if (registeredUser) {
+            roleLabel = `Alumno/a (${registeredUser.nombre} ${registeredUser.apellido})`;
+            applyRolePermissions(assignedRole);
+            createToast(`¡Bienvenido/a de nuevo, ${registeredUser.nombre}! Inscrito en ${registeredUser.carrera.split('(')[0]}`, "success");
+            return;
+          }
+        } catch (err) {
+          console.error("Error leyendo mock de alumnos", err);
+        }
+      }
+
+      applyRolePermissions(assignedRole);
+      createToast(`¡Sesión iniciada! DNI: ${dniValue} accedió como ${roleLabel}.`, "success");
     });
   }
 
@@ -612,6 +653,278 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
+  // -------------------- 9.5. EXCEL BULK UPLOAD LOGIC --------------------
+  state.importedStudents = [];
+
+  const excelDropZone = document.getElementById("excel-drop-zone");
+  const excelFileInput = document.getElementById("excel-file-input");
+  const btnDownloadTemplate = document.getElementById("btn-download-template");
+  const btnSimulateTestData = document.getElementById("btn-simulate-test-data");
+  const btnConfirmImport = document.getElementById("btn-confirm-import");
+  const btnCancelImport = document.getElementById("btn-cancel-import");
+  const previewPanel = document.getElementById("preview-panel");
+  const previewTableBody = document.getElementById("preview-table-body");
+
+  const kpiRead = document.getElementById("kpi-rows-read");
+  const kpiValid = document.getElementById("kpi-rows-valid");
+  const kpiError = document.getElementById("kpi-rows-error");
+
+  if (excelDropZone) {
+    excelDropZone.addEventListener("click", () => {
+      if (excelFileInput) excelFileInput.click();
+    });
+
+    // Drag and drop event listeners
+    ["dragenter", "dragover"].forEach(eventName => {
+      excelDropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        excelDropZone.classList.add("dragover");
+      }, false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+      excelDropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        excelDropZone.classList.remove("dragover");
+      }, false);
+    });
+
+    excelDropZone.addEventListener("drop", (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+  }
+
+  if (excelFileInput) {
+    excelFileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Convert sheet to json array of objects
+        const rawRows = XLSX.utils.sheet_to_json(worksheet);
+        processParsedRows(rawRows);
+      } catch (err) {
+        console.error(err);
+        createToast("Error al leer el archivo Excel. Asegúrate de que no esté corrupto.", "error");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function processParsedRows(rawRows) {
+    if (!rawRows || rawRows.length === 0) {
+      createToast("El archivo de Excel está vacío o no contiene filas.", "warning");
+      return;
+    }
+
+    state.importedStudents = [];
+    let readCount = rawRows.length;
+    let validCount = 0;
+    let errorCount = 0;
+
+    rawRows.forEach((row, index) => {
+      // Find case-insensitive keys
+      const getVal = (possibleKeys) => {
+        const foundKey = Object.keys(row).find(k => possibleKeys.some(pk => k.toLowerCase().trim() === pk.toLowerCase()));
+        return foundKey ? String(row[foundKey]).trim() : "";
+      };
+
+      const dni = getVal(["dni", "documento", "id"]);
+      const nombre = getVal(["nombre", "name", "primer nombre"]);
+      const apellido = getVal(["apellido", "surname", "last name", "apellidos"]);
+      const carrera = getVal(["carrera", "career", "tecnicatura", "programa"]);
+
+      const isValid = dni && nombre && apellido && carrera && /^\d{7,8}$/.test(dni);
+      
+      const studentObj = {
+        id: `imp-${index}-${Date.now()}`,
+        dni: dni,
+        nombre: nombre,
+        apellido: apellido,
+        carrera: carrera,
+        isValid: isValid,
+        statusMsg: isValid ? "Válido" : (!dni || !/^\d{7,8}$/.test(dni) ? "DNI Inválido" : "Campos Vacíos")
+      };
+
+      state.importedStudents.push(studentObj);
+      if (isValid) validCount++;
+      else errorCount++;
+    });
+
+    updateKPIs(readCount, validCount, errorCount);
+    renderPreviewTable();
+    createToast(`Archivo procesado: ${readCount} registros encontrados.`, "success");
+  }
+
+  function updateKPIs(read, valid, errors) {
+    if (kpiRead) kpiRead.textContent = read;
+    if (kpiValid) kpiValid.textContent = valid;
+    if (kpiError) kpiError.textContent = errors;
+  }
+
+  function renderPreviewTable() {
+    if (!previewTableBody || !previewPanel) return;
+
+    previewTableBody.innerHTML = "";
+    if (state.importedStudents.length === 0) {
+      previewPanel.style.display = "none";
+      return;
+    }
+
+    state.importedStudents.forEach(student => {
+      const tr = document.createElement("tr");
+      tr.id = `row-${student.id}`;
+      
+      const badgeClass = student.isValid ? "badge-status-valid" : "badge-status-error";
+      
+      tr.innerHTML = `
+        <td><strong>${student.dni}</strong></td>
+        <td>${student.nombre}</td>
+        <td>${student.apellido}</td>
+        <td><span class="text-muted" style="font-size:0.85rem;">${student.carrera}</span></td>
+        <td><span class="${badgeClass}">${student.statusMsg}</span></td>
+        <td style="text-align: center;">
+          <button class="btn btn-outline-danger btn-sm-delete" data-id="${student.id}" style="padding: 4px 8px; font-size: 0.75rem;">🗑️</button>
+        </td>
+      `;
+
+      previewTableBody.appendChild(tr);
+    });
+
+    // Attach row delete actions
+    previewTableBody.querySelectorAll(".btn-sm-delete").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-id");
+        removeImportedStudent(id);
+      });
+    });
+
+    previewPanel.style.display = "block";
+    previewPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function removeImportedStudent(id) {
+    state.importedStudents = state.importedStudents.filter(s => s.id !== id);
+    
+    // Recalculate KPIs
+    const read = state.importedStudents.length;
+    const valid = state.importedStudents.filter(s => s.isValid).length;
+    const errors = read - valid;
+
+    updateKPIs(read, valid, errors);
+    renderPreviewTable();
+  }
+
+  if (btnCancelImport) {
+    btnCancelImport.addEventListener("click", () => {
+      state.importedStudents = [];
+      if (previewPanel) previewPanel.style.display = "none";
+      updateKPIs(0, 0, 0);
+      if (excelFileInput) excelFileInput.value = "";
+      createToast("Importación cancelada.", "warning");
+    });
+  }
+
+  // Simulate Test Data Load
+  if (btnSimulateTestData) {
+    btnSimulateTestData.addEventListener("click", () => {
+      const mockImported = [
+        { id: "imp-1", dni: "39874521", nombre: "Franco", apellido: "Caputo", carrera: "Tecnicatura Superior en Desarrollo de Software (TS Software)", isValid: true, statusMsg: "Válido" },
+        { id: "imp-2", dni: "40123984", nombre: "Elena", apellido: "Giménez", carrera: "Tecnicatura Superior en Adm. de Redes y Sistemas (TS Redes)", isValid: true, statusMsg: "Válido" },
+        { id: "imp-3", dni: "41984256", nombre: "Santiago", apellido: "Vázquez", carrera: "Tecnicatura Superior en Enfermería (TS Enfermería)", isValid: true, statusMsg: "Válido" },
+        { id: "imp-4", dni: "invalid-dni", nombre: "Julieta", apellido: "Pons", carrera: "Tecnicatura Superior en Desarrollo de Software (TS Software)", isValid: false, statusMsg: "DNI Inválido" },
+        { id: "imp-5", dni: "42109348", nombre: "Mateo", apellido: "Russo", carrera: "Tecnicatura Superior en Marketing Digital (TS Marketing)", isValid: true, statusMsg: "Válido" }
+      ];
+
+      state.importedStudents = mockImported;
+      updateKPIs(5, 4, 1);
+      renderPreviewTable();
+      createToast("⚡ Planilla de prueba cargada con éxito. Revisa el listado.", "success");
+    });
+  }
+
+  // Generate and Download Template
+  if (btnDownloadTemplate) {
+    btnDownloadTemplate.addEventListener("click", () => {
+      try {
+        const wb = XLSX.utils.book_new();
+        const ws_data = [
+          ["DNI", "Nombre", "Apellido", "Carrera"],
+          ["39123456", "Clara", "Méndez", "Tecnicatura Superior en Desarrollo de Software (TS Software)"],
+          ["40555666", "Tomás", "Benítez", "Tecnicatura Superior en Adm. de Redes y Sistemas (TS Redes)"],
+          ["38444999", "Federico", "Díaz", "Tecnicatura Superior en Enfermería (TS Enfermería)"],
+          ["41777222", "Valentina", "Gómez", "Tecnicatura Superior en Marketing Digital (TS Marketing)"]
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, "Alumnos");
+        XLSX.writeFile(wb, "Plantilla_Alumnos_Instituto124.xlsx");
+        createToast("✓ Plantilla oficial descargada correctamente.", "success");
+      } catch (err) {
+        console.error(err);
+        createToast("No se pudo generar el archivo de plantilla.", "error");
+      }
+    });
+  }
+
+  // Confirm and Save Import
+  if (btnConfirmImport) {
+    btnConfirmImport.addEventListener("click", () => {
+      const validStudents = state.importedStudents.filter(s => s.isValid);
+      if (validStudents.length === 0) {
+        createToast("No hay registros válidos para importar.", "warning");
+        return;
+      }
+
+      try {
+        const mockDb = JSON.parse(sessionStorage.getItem("mock_registered_students") || "[]");
+        
+        validStudents.forEach(newStudent => {
+          // Avoid duplicate entries
+          if (!mockDb.some(u => u.dni === newStudent.dni)) {
+            mockDb.push({
+              nombre: newStudent.nombre,
+              apellido: newStudent.apellido,
+              dni: newStudent.dni,
+              carrera: newStudent.carrera
+            });
+          }
+        });
+
+        sessionStorage.setItem("mock_registered_students", JSON.stringify(mockDb));
+        createToast(`¡Importación exitosa! Se cargaron ${validStudents.length} alumnos correctamente al sistema.`, "success");
+        
+        // Reset state
+        state.importedStudents = [];
+        if (previewPanel) previewPanel.style.display = "none";
+        updateKPIs(0, 0, 0);
+        if (excelFileInput) excelFileInput.value = "";
+        
+        // Go back to preceptor dashboard
+        switchView("admin-dash");
+      } catch (err) {
+        console.error(err);
+        createToast("Error al guardar los alumnos importados.", "error");
+      }
+    });
+  }
+
+
   // -------------------- 10. LIVE FEED EVENT GENERATION (AUTO-SIMULATE) --------------------
   const adminLiveFeed = document.getElementById("admin-live-feed");
   const mockFeedPhrases = [
@@ -669,6 +982,43 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => toast.remove(), 300);
     }, 4000);
   }
+
+  // -------------------- 12. MOBILE NAVIGATION DRAWER --------------------
+  const btnMenuToggle = document.getElementById("btn-menu-toggle");
+  const appSidebar = document.querySelector(".app-sidebar");
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+  function toggleSidebar() {
+    if (appSidebar && btnMenuToggle && sidebarOverlay) {
+      appSidebar.classList.toggle("open");
+      btnMenuToggle.classList.toggle("open");
+      sidebarOverlay.classList.toggle("open");
+    }
+  }
+
+  function closeSidebar() {
+    if (appSidebar && btnMenuToggle && sidebarOverlay) {
+      appSidebar.classList.remove("open");
+      btnMenuToggle.classList.remove("open");
+      sidebarOverlay.classList.remove("open");
+    }
+  }
+
+  if (btnMenuToggle) {
+    btnMenuToggle.addEventListener("click", toggleSidebar);
+  }
+
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener("click", closeSidebar);
+  }
+
+  // Auto-close sidebar on mobile when navigating
+  const allNavigableElements = document.querySelectorAll(".nav-btn, .btn-shortcut, #btn-logout");
+  allNavigableElements.forEach(btn => {
+    btn.addEventListener("click", () => {
+      closeSidebar();
+    });
+  });
 
   // Pre-select first item on load
   selectJustification("1");
